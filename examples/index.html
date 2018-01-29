@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>example</title>
+    <style type="text/css">
+    	* {
+    		margin: 0;
+		    padding: 0;
+            font-family: 'Avenir', Helvetica, Arial, sans-serif;
+			-webkit-font-smoothing: antialiased;
+		    -moz-osx-font-smoothing: grayscale;
+		    box-sizing: border-box;
+    	}
+
+    	.handle {
+    		margin-top: 40px;
+    	}
+    </style>
+</head>
+<body>
+	<input type="file" name="upload-image" class="upload-input">
+    <div id="app">
+    	
+    </div>
+    <div class="handle">
+    	<button onclick="fromUpload.upload()">全部上传</button>
+    	<button onclick="fromUpload.cancel()">全部暂停</button>
+    </div>
+    
+    <script type="text/javascript">
+    	/* eslint-disable no-unused-vars */
+		function uploadFn(fileId) {
+		    console.log('上传 序号第' + fileId + '文件')
+		    fromUpload.upload(fileId)
+		}
+		function cancelFn(fileId) {
+		    console.log('暂停 序号第' + fileId + '文件')
+		    fromUpload.cancel(fileId)
+		}
+    </script>
+</body>
+</html>
