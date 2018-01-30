@@ -1,9 +1,13 @@
 import BUpload from '@/index'
 
 let fromUpload = new BUpload('.upload-input', {
-    uploadUrl: 'http://localhost:3111/',
-    formData: {
-
+    config: {
+        method: 'post',
+        url: 'http://localhost:3111/',
+        params: {
+            name: 'Arey',
+            age: 20
+        }
     },
     // multiple: false,
     fileSizeLimit: 1024,

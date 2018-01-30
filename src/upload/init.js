@@ -4,18 +4,16 @@ const DEFAULT_OPTIONS = {
         width: false,
         height: false
     },
+    // 上传配置
+    config: {
+        method: 'get',
+        url: '',
+        params: {}
+    },
     // 允许上传文件的类型
     fileTypes: [],
     // 文件大小限制(单位:kb)
     fileSizeLimit: 2048,
-    form: {
-
-    },
-    type: 'post',
-    // 额外参数
-    formData: {},
-    // 上传地址
-    uploadUrl: '',
     // 自动上传
     auto: true,
     // 是否选择多个文件

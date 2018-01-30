@@ -1,17 +1,17 @@
 import {warn} from '../util/debug'
-import {FILE_STATUS} from '../util/config'
+import {FILE_STATUS, LIMIT_TYPES} from '../util/config'
 import {isBlob} from '../util/dom'
 
 let fileCount = 0
-const createObjectURL = window.URL.createObjectURL
-const FORM_DATA = 'FormData'
-const limitTypes = ['jpg', 'png']
+let createObjectURL = window.URL.createObjectURL
 
 const limitType = function(typeName) {
-    return limitTypes.findIndex(type => typeName === type) !== -1
+    return LIMIT_TYPES.findIndex(type => typeName === type) !== -1
 }
 
 export default function coreMixin (BUpload) {
+    // 加上一个修改参数的方法
+
     BUpload.prototype.upload = function(fileId) {
         let waitFiles = this.waitUploadFiles
         if (!waitFiles.length) {
@@ -27,7 +27,7 @@ export default function coreMixin (BUpload) {
     }
 
     BUpload.prototype._changeEvent = function(e) {
-        if (!this.enabled || !this._supportAttr(FORM_DATA)) {
+        if (!this.enabled || !this._supportAttr('FormData')) {
             return
         }
 
@@ -69,12 +69,23 @@ export default function coreMixin (BUpload) {
 
     BUpload.prototype._uploadFile = function(file) {
         if (file.status === FILE_STATUS.WAIT) {
-            file.status = FILE_STATUS.PROGRESS
             console.log(file)
+            file.status = FILE_STATUS.PROGRESS
+
+            let config = this.options.config
             let xhr = new XMLHttpRequest()
-            // let formData = new FormData()
-            xhr.open()
-            xhr.send()
+            let formData = new FormData()
+            // xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.open(config.method, config.url, true)
+
+            formData.append('file', file.file)
+            if (config.params) {
+                for (let key in config.params) {
+                    formData.append(key, config.params[key])
+                }
+            }
+
+            xhr.send(formData)
             xhr.onreadystatechange = function() {
 
             }

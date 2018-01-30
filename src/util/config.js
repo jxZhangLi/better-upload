@@ -1,3 +1,5 @@
+export const LIMIT_TYPES = ['jpg', 'png']
+
 export const FILE_STATUS = {
     // 等待上传
     WAIT: 0,
