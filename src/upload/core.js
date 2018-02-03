@@ -57,7 +57,7 @@ export default function coreMixin (BUpload) {
             if (!this.options._fileSizeLimit && limitType(file.type) && !isBlob(file.file)) {
                 console.log(file.id + '进行压缩')
                 this._canvasCompress(file.src).then((blob) => {
-                    file.file = blob
+                    file.file = new File([blob], file.file.name)
                     this._uploadFile(file)
                 })
             } else {
@@ -75,8 +75,9 @@ export default function coreMixin (BUpload) {
             let config = this.options.config
             let xhr = new XMLHttpRequest()
             let formData = new FormData()
-            // xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
             xhr.open(config.method, config.url, true)
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
 
             formData.append('file', file.file)
             if (config.params) {
@@ -84,15 +85,20 @@ export default function coreMixin (BUpload) {
                     formData.append(key, config.params[key])
                 }
             }
-
-            xhr.send(formData)
             xhr.onreadystatechange = function() {
-
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        console.log('上传成功！')
+                    } else {
+                        console.log('上传失败！')
+                    }
+                }
             }
-            xhr.onprogress = function() {
-
+            xhr.onprogress = function(e) {
+                console.log(e)
             }
-            console.log(xhr)
+            xhr.send(formData)
+            // console.log(xhr)
         }
     }
 

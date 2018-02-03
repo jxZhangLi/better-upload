@@ -3,15 +3,15 @@ import BUpload from '@/index'
 let fromUpload = new BUpload('.upload-input', {
     config: {
         method: 'post',
-        url: 'http://localhost:3111/',
+        url: 'http://localhost:3111/uploadFile',
         params: {
             name: 'Arey',
             age: 20
         }
     },
     // multiple: false,
-    fileSizeLimit: 1024,
-    fileTypes: ['png', 'jpg', 'psd'],
+    fileSizeLimit: 31024,
+    fileTypes: ['png', 'jpg', 'psd', 'zip'],
     compressImage: {
         width: 500,
         height: 500
