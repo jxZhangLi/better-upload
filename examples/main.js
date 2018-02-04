@@ -11,7 +11,7 @@ let fromUpload = new BUpload('.upload-input', {
     },
     // multiple: false,
     fileSizeLimit: 31024,
-    fileTypes: ['png', 'jpg', 'psd', 'zip'],
+    fileTypes: ['png', 'jpg', 'zip'],
     compressImage: {
         width: 500,
         height: 500

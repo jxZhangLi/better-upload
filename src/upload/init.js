@@ -1,3 +1,4 @@
+
 const DEFAULT_OPTIONS = {
     // 图片压缩成指定宽高，若指设置width值，则height将等比例缩放
     compressImage: {
@@ -38,12 +39,14 @@ export default function initMixin(BUpload) {
         this.uploader.multiple = options.multiple
 
         // If the compressImage param is set, the fileSizeLimit param fails.
-        this.options._fileSizeLimit = options.compressImage.width || options.compressImage.height ? false : options.fileSizeLimit
+        options._fileSizeLimit = options.compressImage.width || options.compressImage.height ? false : options.fileSizeLimit
 
         if (options.fileTypes.length) {
             let fileTypes = options.fileTypes.map(item => `.${item}`).join(',')
             this.uploader.accept = fileTypes
         }
+
+        options.config = Object.assign({}, DEFAULT_OPTIONS.config, options.config)
     }
 
     BUpload.prototype._addDOMEvent = function() {

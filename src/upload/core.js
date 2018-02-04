@@ -1,6 +1,7 @@
 import {warn} from '../util/debug'
 import {FILE_STATUS, LIMIT_TYPES} from '../util/config'
-import {isBlob} from '../util/dom'
+import {isBlob, deepCopy} from '../util/util'
+import {request} from '../util/http'
 
 let fileCount = 0
 let createObjectURL = window.URL.createObjectURL
@@ -55,13 +56,11 @@ export default function coreMixin (BUpload) {
     BUpload.prototype._readerFile = function(files) {
         files.forEach((file) => {
             if (!this.options._fileSizeLimit && limitType(file.type) && !isBlob(file.file)) {
-                console.log(file.id + '进行压缩')
                 this._canvasCompress(file.src).then((blob) => {
                     file.file = new File([blob], file.file.name)
                     this._uploadFile(file)
                 })
             } else {
-                console.log(file.id + '不进行压缩')
                 this._uploadFile(file)
             }
         })
@@ -69,36 +68,22 @@ export default function coreMixin (BUpload) {
 
     BUpload.prototype._uploadFile = function(file) {
         if (file.status === FILE_STATUS.WAIT) {
-            console.log(file)
-            file.status = FILE_STATUS.PROGRESS
+            let options = deepCopy(this.options.config)
+            options.params.file = file.file
+            options.fileInfo = file
 
-            let config = this.options.config
-            let xhr = new XMLHttpRequest()
-            let formData = new FormData()
-
-            xhr.open(config.method, config.url, true)
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
-
-            formData.append('file', file.file)
-            if (config.params) {
-                for (let key in config.params) {
-                    formData.append(key, config.params[key])
+            request({
+                ...options,
+                onProgress(e) {
+                    console.log('上传中', e)
+                },
+                onSuccess(e) {
+                    console.log('上传成功', e)
+                },
+                onError(e) {
+                    console.log('上传失败', e)
                 }
-            }
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200) {
-                        console.log('上传成功！')
-                    } else {
-                        console.log('上传失败！')
-                    }
-                }
-            }
-            xhr.onprogress = function(e) {
-                console.log(e)
-            }
-            xhr.send(formData)
-            // console.log(xhr)
+            })
         }
     }
 

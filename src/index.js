@@ -3,7 +3,7 @@ import coreMixin from './upload/core'
 import eventMixin from './upload/event'
 
 import {warn} from './util/debug'
-import {isFileTag} from './util/dom'
+import {isFileTag} from './util/util'
 
 function BUpload(el, options) {
     this.uploader = typeof el === 'string' ? document.querySelector(el) : el
