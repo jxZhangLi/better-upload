@@ -16,3 +16,7 @@ export function deepCopy(obj) {
     }
     return newObj
 }
+
+export function findItem(data, target) {
+    return target ? [data[data.findIndex(file => file['id'] === target)]] : data
+}

@@ -1,30 +1,24 @@
 import {warn} from '../util/debug'
 import {FILE_STATUS, LIMIT_TYPES} from '../util/config'
-import {isBlob, deepCopy} from '../util/util'
+import {isBlob, deepCopy, findItem} from '../util/util'
 import {request} from '../util/http'
 
-let fileCount = 0
-let createObjectURL = window.URL.createObjectURL
+const CreateObjectURL = window.URL.createObjectURL
+const Storage = window.localStorage
 
 const limitType = function(typeName) {
     return LIMIT_TYPES.findIndex(type => typeName === type) !== -1
 }
 
 export default function coreMixin (BUpload) {
-    // 加上一个修改参数的方法
-
-    BUpload.prototype.upload = function(fileId) {
-        let waitFiles = this.waitUploadFiles
-        if (!waitFiles.length) {
-            return
-        }
-
-        let files = fileId ? [waitFiles[waitFiles.findIndex(file => file.id === fileId)]] : waitFiles
+    BUpload.prototype.upload = function(id) {
+        let files = findItem(this.uploadFiles, id)
         this._readerFile(files)
     }
 
-    BUpload.prototype.cancel = function(fileId) {
-        console.log(fileId)
+    BUpload.prototype.cancel = function(id) {
+        let files = findItem(this.uploadFiles, id)
+        console.log(files)
     }
 
     BUpload.prototype._changeEvent = function(e) {
@@ -32,14 +26,15 @@ export default function coreMixin (BUpload) {
             return
         }
 
+        let uploadFiles = this.uploadFiles
         let files = this._filterFiles(e.srcElement.files)
-        this.waitUploadFiles.push.apply(this.waitUploadFiles, files)
+        uploadFiles.push.apply(uploadFiles, files)
 
         this.trigger('select', files)
 
         // auto upload
         if (this.options.auto) {
-            this._readerFile(this.waitUploadFiles)
+            this._readerFile(uploadFiles)
         }
 
         // 清除 input = ''
@@ -54,34 +49,39 @@ export default function coreMixin (BUpload) {
     }
 
     BUpload.prototype._readerFile = function(files) {
-        files.forEach((file) => {
-            if (!this.options._fileSizeLimit && limitType(file.type) && !isBlob(file.file)) {
-                this._canvasCompress(file.src).then((blob) => {
-                    file.file = new File([blob], file.file.name)
-                    this._uploadFile(file)
+        files.forEach((fileItem) => {
+            // 只压缩图片
+            if (!this.options._fileSizeLimit && limitType(fileItem.type) && !isBlob(fileItem.file)) {
+                this._canvasCompress(fileItem.src).then((blob) => {
+                    // blob -> file
+                    fileItem.file = new File([blob], fileItem.file.name)
+                    this._uploadFile(fileItem)
                 })
             } else {
-                this._uploadFile(file)
+                this._uploadFile(fileItem)
             }
         })
     }
 
-    BUpload.prototype._uploadFile = function(file) {
-        if (file.status === FILE_STATUS.WAIT) {
+    BUpload.prototype._uploadFile = function(oFile) {
+        if (oFile.status === FILE_STATUS.WAIT) {
+            let self = this
             let options = deepCopy(this.options.config)
-            options.params.file = file.file
-            options.fileInfo = file
+
+            this.trigger('beforeStart', options)
 
             request({
                 ...options,
+                fileInfo: oFile,
+                sliceSize: this.options.fileSliceSize,
                 onProgress(e) {
-                    console.log('上传中', e)
+                    self.trigger('progress', e)
                 },
                 onSuccess(e) {
-                    console.log('上传成功', e)
+                    self.trigger('success', e)
                 },
                 onError(e) {
-                    console.log('上传失败', e)
+                    self.trigger('error', e)
                 }
             })
         }
@@ -144,30 +144,44 @@ export default function coreMixin (BUpload) {
     }
 
     BUpload.prototype._filterFiles = function(files) {
+        let sliceSize = this.options.fileSliceSize
         let filterArray = []
         let types = {}
+
         this.options.fileTypes.forEach((type) => {
             let key = type.toLowerCase()
             if (!types[key]) {
                 types[key] = true
             }
         })
+
         for (let i = 0; i < files.length; i++) {
-            let filesSplit = files[i].name.split('.')
-            let imgType = filesSplit[filesSplit.length - 1].toLowerCase()
+            let splitArray = files[i].name.split('.')
+            let imgType = splitArray[splitArray.length - 1].toLowerCase()
             let fileSize = parseFloat((files[i].size / 1024).toFixed(2))
+            let randomId = Math.random().toString(36).substr(2)
+
             // if type and file size
-            if (types[imgType] && (this.options.fileSizeLimit >= fileSize || !this.options.fileSizeLimit)) {
-                let file = {
-                    file: files[i],
-                    id: ++fileCount,
-                    size: fileSize,
-                    unit: 'kb',
-                    type: imgType,
-                    status: FILE_STATUS.WAIT,
-                    src: createObjectURL(files[i])
+            if (types[imgType]) {
+                if (this.options.fileSizeLimit >= fileSize || !this.options.fileSizeLimit) {
+                    let localFile = JSON.parse(Storage.getItem(files[i].name))
+                    let file = {
+                        file: files[i],
+                        id: localFile ? localFile.id : randomId,
+                        size: fileSize,
+                        unit: 'kb',
+                        type: imgType,
+                        status: FILE_STATUS.WAIT,
+                        src: CreateObjectURL(files[i]),
+                        slice: localFile ? localFile.currentSlice : 0,
+                        progress: localFile ? parseFloat((localFile.currentSlice * sliceSize / files[i].size).toFixed(2)) : 0
+                    }
+                    filterArray.push(file)
+                } else {
+                    warn(`限制文件大小为 ${this.options.fileSizeLimit}，但是当前文件大小为：${fileSize}`)
                 }
-                filterArray.push(file)
+            } else {
+                warn(`当前文件：${files[i].name} 无法进行上传，需要在 fileTypes 参数中添加类型`)
             }
         }
         return filterArray
