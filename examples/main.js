@@ -17,6 +17,7 @@ let fromUpload = new BUpload('.upload-input', {
         height: 500
     },
     auto: false,
+    // html 模板输入
     HTMLtemplate: function(file) {
         return `
             <div class="upload-file-${file.id}">
