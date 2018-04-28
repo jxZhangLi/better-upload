@@ -1,7 +1,7 @@
 # better-upload
 in development......
 
-### 调用插件目前实现想法
+### 调用插件 AND 目前实现想法
 ```javascript
 import BUpload from '@/index'
 
