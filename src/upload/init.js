@@ -1,3 +1,5 @@
+import observe from 'obajs'
+
 const DEFAULT_OPTIONS = {
     // 图片压缩成指定宽高，若指设置width值，则height将等比例缩放
     compressImage: {
@@ -28,6 +30,14 @@ export default function initMixin(BUpload) {
 
         this.uploadFiles = []
         this._events = {}
+        // 后期自己写一个
+        observe(this.uploadFiles, (name, value, old, path) => {
+            console.log('_renderView', name, value, old)
+            if (name === 'file' || name === 'dom') {
+                return
+            }
+            this._renderView(path)
+        })
 
         this._handleOptions(this.options)
 

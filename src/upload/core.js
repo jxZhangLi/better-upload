@@ -1,8 +1,9 @@
 import {warn} from '../util/debug'
 import {FILE_STATUS, LIMIT_TYPES} from '../util/config'
-import {isBlob, deepCopy, findItem} from '../util/util'
+import {isBlob, deepCopy, findItem, parseDOM, addEvent} from '../util/util'
 import {request} from '../util/http'
 
+const SPLIT_FUNCTION_REGEXP = /\w+/g
 const CreateObjectURL = window.URL.createObjectURL
 const Storage = window.localStorage
 
@@ -22,15 +23,17 @@ export default function coreMixin (BUpload) {
     }
 
     BUpload.prototype._changeEvent = function(e) {
+        // 加入wrapperEl判断 待定
         if (!this.enabled || !this._supportAttr('FormData')) {
             return
         }
 
         let uploadFiles = this.uploadFiles
         let files = this._filterFiles(e.srcElement.files)
+
         uploadFiles.push.apply(uploadFiles, files)
 
-        this.trigger('select', files)
+        // this.trigger('select', files)
 
         // auto upload
         if (this.options.auto) {
@@ -46,6 +49,81 @@ export default function coreMixin (BUpload) {
             return false
         }
         return true
+    }
+    // 检测字符串类型是否为正确的参数
+    function checkStringType(value) {
+        /* eslint-disable */
+        switch (value) {
+            case '' :
+                return false
+            case '0' :
+                return false
+            case 'null' :
+                return false
+            case 'undefined' :
+                return false
+            case 'false' :
+                return false
+            default :
+                return true
+        }
+        /* eslint-enable */
+    }
+
+    BUpload.prototype._directive = function() {
+        const _this = this
+        return [{
+            name: 'v-show',
+            handle: function(tag) {
+                let value = tag.attributes[this.name]['value']
+
+                tag.style.display = checkStringType(value) ? '' : 'none'
+            }
+        }, {
+            name: 'v-click',
+            handle: function(tag) {
+                let value = tag.attributes[this.name]['value']
+                let [fnName, ...args] = value.match(SPLIT_FUNCTION_REGEXP)
+                addEvent(tag, 'click', function() {
+                    _this.options.methods[fnName](...args)
+                })
+            }
+        }]
+    }
+
+    BUpload.prototype._renderView = function(path) {
+        let wrapperEl = document.querySelector(this.options.wrapperEl)
+        let HTMLtemplate = this.options.HTMLtemplate
+
+        this.uploadFiles.forEach((file) => {
+            let filePath = file.$observeProps.$observerPath
+            if ((path.length === 1 && !!file.isRender) || (filePath !== path && path.length !== 1)) {
+                return
+            }
+
+            let strHTML = HTMLtemplate(file)
+            let fileDOM = parseDOM(strHTML)
+            console.log(strHTML, fileDOM)
+
+            this._directive().forEach((directive) => {
+                let elements = fileDOM.querySelectorAll(`[${directive.name}]`)
+
+                elements.forEach((tag) => {
+                    directive.handle(tag)
+                })
+            })
+
+            if (file.isRender) {
+                wrapperEl.replaceChild(fileDOM, file.dom)
+
+                file.dom = fileDOM
+            } else {
+                file.dom = fileDOM
+                file.isRender = true
+
+                wrapperEl.appendChild(fileDOM)
+            }
+        })
     }
 
     BUpload.prototype._readerFile = function(files) {
@@ -74,9 +152,9 @@ export default function coreMixin (BUpload) {
                 ...options,
                 fileInfo: oFile,
                 sliceSize: this.options.fileSliceSize,
-                onProgress(e) {
-                    self.trigger('progress', e)
-                },
+                // onProgress(e) {
+                //     self.trigger('progress', e)
+                // },
                 onSuccess(e) {
                     self.trigger('success', e)
                 },

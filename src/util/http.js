@@ -3,7 +3,7 @@ import {FILE_STATUS} from '../util/config'
 const Storage = window.localStorage
 
 export function request (options) {
-    let { fileInfo, onSuccess, onError, onProgress, sliceSize } = options
+    let { fileInfo, onSuccess, onError, sliceSize } = options
     let currentSlice = fileInfo.slice
     let sliceSum = Math.ceil(fileInfo.file.size / sliceSize)
     let isSlice = sliceSize && fileInfo.file.size > sliceSize
@@ -59,10 +59,12 @@ export function request (options) {
             progress = parseFloat((e.loaded / e.total).toFixed(2))
         }
 
-        onProgress && onProgress({
-            progress,
-            fileInfo
-        })
+        fileInfo.progress = progress
+
+        // onProgress && onProgress({
+        //     progress,
+        //     fileInfo
+        // })
     }
 
     _sendBlob({
